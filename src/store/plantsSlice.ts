@@ -5,6 +5,8 @@ import {
 } from "@reduxjs/toolkit";
 import axios from "axios";
 import type { Plant, FetchPlantsResponse } from "../types";
+import { uploadImageToCloudinary } from "../services/cloudinary";
+import { api } from "../services/api";
 
 const API_BASE = "https://api.alumnx.com/api/hackathons";
 const USER_EMAIL = "farmer@gmail.com";
@@ -19,6 +21,7 @@ export const fetchPlants = createAsyncThunk(
       );
       const plantsWithStatus = response.data.data.map((p) => ({
         ...p,
+        id: p._id ?? p.tempId!,
         syncStatus: "synced" as const,
       }));
       return plantsWithStatus;
@@ -31,7 +34,6 @@ export const fetchPlants = createAsyncThunk(
 );
 
 const plantsAdapter = createEntityAdapter<Plant>({
-  selectId: (plant) => plant._id || plant.tempId || "unknown",
   sortComparer: (a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""),
 });
 
@@ -59,9 +61,62 @@ const plantsSlice = createSlice({
       .addCase(fetchPlants.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(uploadPlant.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(uploadPlant.fulfilled, (state, action) => {
+        state.loading = false;
+        plantsAdapter.addOne(state, action.payload);
+      })
+      .addCase(uploadPlant.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
+
+export const uploadPlant = createAsyncThunk(
+  "plants/uploadPlant",
+  async (file: File, { rejectWithValue }) => {
+    try {
+      const emailId = "farmer@gmail.com"; // Hardcoded for now
+      const imageName = file.name;
+
+      // Step 1: Upload Image
+      const imageUrl = await uploadImageToCloudinary(file);
+
+      // Step 2: Extract Geo Data
+      const extractRes = await api.extractLocation(
+        emailId,
+        imageName,
+        imageUrl
+      );
+
+      if (!extractRes.success) {
+        throw new Error("Could not extract location from image");
+      }
+
+      // Step 3: Save to Database
+      const saveRes = await api.savePlantData({
+        emailId,
+        imageName,
+        imageUrl,
+        latitude: extractRes.data.latitude,
+        longitude: extractRes.data.longitude,
+      });
+
+      // Return the final saved plant object to Redux
+      return {
+        ...saveRes.data,
+        syncStatus: "synced" as const,
+      };
+    } catch (error: any) {
+      console.error("Upload flow failed:", error);
+      return rejectWithValue(error.message || "Upload failed");
+    }
+  }
+);
 
 export const { addPlant, updatePlant, removePlant } = plantsSlice.actions;
 export default plantsSlice.reducer;

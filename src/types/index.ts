@@ -4,6 +4,7 @@ export interface GeoJSONPoint {
 }
 
 export interface Plant {
+  id: string;
   _id?: string;
   tempId?: string;
   emailId: string;
