@@ -31,4 +31,11 @@ export const api = {
     );
     return response.data;
   },
+
+  getPlants: async (emailId: string) => {
+    const response = await axios.get<Plant[]>(`${API_BASE}/get-plants`, {
+      params: { emailId },
+    });
+    return response.data;
+  },
 };

@@ -3,27 +3,29 @@ import {
   createEntityAdapter,
   createAsyncThunk,
 } from "@reduxjs/toolkit";
-import axios from "axios";
 import type { Plant, FetchPlantsResponse } from "../types";
 import { uploadImageToCloudinary } from "../services/cloudinary";
 import { api } from "../services/api";
+import { offlineService } from "../services/db";
+import { parsePlantFilename } from "../utils/fileParser";
 
-const API_BASE = "https://api.alumnx.com/api/hackathons";
-const USER_EMAIL = "farmer@gmail.com";
+const plantsAdapter = createEntityAdapter<Plant, string>({
+  selectId: (plant) =>
+    plant._id ?? plant.imageName?.split("_")[0] ?? `temp-${Date.now()}`,
+  sortComparer: (a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""),
+});
 
 export const fetchPlants = createAsyncThunk(
   "plants/fetchPlants",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.post<FetchPlantsResponse>(
-        `${API_BASE}/get-plant-location-data`,
-        { emailId: USER_EMAIL }
-      );
-      const plantsWithStatus = response.data.data.map((p) => ({
+      const plants = await api.getPlants("farmer@gmail.com");
+
+      const plantsWithStatus = plants.map((p) => ({
         ...p,
-        id: p._id ?? p.tempId!,
         syncStatus: "synced" as const,
       }));
+
       return plantsWithStatus;
     } catch (error: any) {
       return rejectWithValue(
@@ -33,17 +35,97 @@ export const fetchPlants = createAsyncThunk(
   }
 );
 
-const plantsAdapter = createEntityAdapter<Plant>({
-  sortComparer: (a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""),
-});
+export const processSyncQueue = createAsyncThunk(
+  "plants/processSyncQueue",
+  async (_, { dispatch }) => {
+    const queue = await offlineService.getQueue();
+    if (queue.length === 0) return;
+
+    console.log(`📡 Syncing ${queue.length} offline items via API...`);
+
+    for (const item of queue) {
+      try {
+        await dispatch(
+          uploadPlant({
+            file: item.file,
+            isSyncing: true,
+            tempIdToRemove: item.plantId,
+          })
+        ).unwrap();
+        await offlineService.removeFromQueue(item.id);
+      } catch (e) {
+        console.error("Sync failed for item", item.id);
+      }
+    }
+  }
+);
+
+export const uploadPlant = createAsyncThunk(
+  "plants/uploadPlant",
+  async (
+    {
+      file,
+      isSyncing = false,
+    }: { file: File; isSyncing?: boolean; tempIdToRemove?: string },
+    { dispatch, rejectWithValue }
+  ) => {
+    const meta = parsePlantFilename(file.name);
+
+    const plantId = meta.isValid ? meta.plantId : `temp-${Date.now()}`;
+
+    const tempPlant: Plant = {
+      id: plantId,
+      emailId: "farmer@gmail.com",
+      imageName: file.name,
+      imageUrl: URL.createObjectURL(file),
+      latitude: meta.isValid ? meta.latitude : 0,
+      longitude: meta.isValid ? meta.longitude : 0,
+      syncStatus: navigator.onLine || isSyncing ? "extracting" : "pending",
+      createdAt: new Date().toISOString(),
+      _id: undefined,
+    };
+
+    if (!isSyncing) {
+      dispatch(plantsSlice.actions.optimisticUpsert(tempPlant));
+    }
+
+    if (!navigator.onLine && !isSyncing) {
+      await offlineService.addToQueue(file, plantId);
+      return { ...tempPlant, syncStatus: "pending" as const };
+    }
+
+    try {
+      const cloudUrl = await uploadImageToCloudinary(file);
+      const extractRes = await api.extractLocation(
+        tempPlant.emailId,
+        file.name,
+        cloudUrl
+      );
+      const saveRes = await api.savePlantData({
+        ...tempPlant,
+        imageUrl: cloudUrl,
+        latitude: extractRes.data.latitude,
+        longitude: extractRes.data.longitude,
+      });
+
+      return { ...saveRes.data, syncStatus: "synced" as const };
+    } catch (error: any) {
+      if (!isSyncing) await offlineService.addToQueue(file, plantId);
+      console.error("Upload flow failed:", error);
+      return rejectWithValue(error.message || "Upload failed");
+    }
+  }
+);
 
 const plantsSlice = createSlice({
   name: "plants",
   initialState: plantsAdapter.getInitialState({
     loading: false,
     error: null as string | null,
+    queueSize: 0,
   }),
   reducers: {
+    optimisticUpsert: plantsAdapter.upsertOne,
     addPlant: plantsAdapter.addOne,
     updatePlant: plantsAdapter.updateOne,
     removePlant: plantsAdapter.removeOne,
@@ -62,63 +144,14 @@ const plantsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      .addCase(uploadPlant.pending, (state) => {
-        state.loading = true;
-      })
       .addCase(uploadPlant.fulfilled, (state, action) => {
-        state.loading = false;
-        plantsAdapter.addOne(state, action.payload);
-      })
-      .addCase(uploadPlant.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        plantsAdapter.upsertOne(state, action.payload);
       });
   },
 });
 
-export const uploadPlant = createAsyncThunk(
-  "plants/uploadPlant",
-  async (file: File, { rejectWithValue }) => {
-    try {
-      const emailId = "farmer@gmail.com"; // Hardcoded for now
-      const imageName = file.name;
-
-      // Step 1: Upload Image
-      const imageUrl = await uploadImageToCloudinary(file);
-
-      // Step 2: Extract Geo Data
-      const extractRes = await api.extractLocation(
-        emailId,
-        imageName,
-        imageUrl
-      );
-
-      if (!extractRes.success) {
-        throw new Error("Could not extract location from image");
-      }
-
-      // Step 3: Save to Database
-      const saveRes = await api.savePlantData({
-        emailId,
-        imageName,
-        imageUrl,
-        latitude: extractRes.data.latitude,
-        longitude: extractRes.data.longitude,
-      });
-
-      // Return the final saved plant object to Redux
-      return {
-        ...saveRes.data,
-        syncStatus: "synced" as const,
-      };
-    } catch (error: any) {
-      console.error("Upload flow failed:", error);
-      return rejectWithValue(error.message || "Upload failed");
-    }
-  }
-);
-
-export const { addPlant, updatePlant, removePlant } = plantsSlice.actions;
+export const { addPlant, updatePlant, removePlant, optimisticUpsert } =
+  plantsSlice.actions;
 export default plantsSlice.reducer;
 
 export const { selectAll: selectAllPlants, selectById: selectPlantById } =
