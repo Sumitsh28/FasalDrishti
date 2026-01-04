@@ -1,22 +1,19 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import Map, { NavigationControl, GeolocateControl, Marker } from "react-map-gl";
-
 import type { MapRef } from "react-map-gl";
 import useSupercluster from "use-supercluster";
-import type {
-  BBox,
-  GeoJsonProperties,
-  FeatureCollection,
-  Point,
-} from "geojson";
+import type { BBox, FeatureCollection, Point } from "geojson";
 import type { ClusterProperties } from "supercluster";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchPlants, selectAllPlants } from "../../store/plantsSlice";
 import { pointsWithinPolygon } from "@turf/turf";
 import type { Plant } from "../../types";
-import { Sprout, Clock } from "lucide-react";
+import { Sprout, Clock, Download, FileDown } from "lucide-react";
 import DrawControl from "./DrawControl";
 import { toast } from "sonner";
+import { downloadPlantsCSV } from "../../utils/csvHelper";
+import { useTheme } from "../../context/ThemeContext";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -35,8 +32,9 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
   const dispatch = useAppDispatch();
   const plants = useAppSelector(selectAllPlants);
 
-  const mapRef = useRef<MapRef>(null);
+  const { theme } = useTheme();
 
+  const mapRef = useRef<MapRef>(null);
   const pointsRef = useRef<any[]>([]);
 
   const [bounds, setBounds] = useState<BBox | null>(null);
@@ -100,9 +98,24 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
       const count = ptsWithin.features.length;
 
       if (count > 0) {
+        const selectedPlants = ptsWithin.features.map(
+          (f) => f.properties as unknown as Plant
+        );
+
         toast.success(`Found ${count} plants in this area!`, {
-          description: "Analysis complete.",
-          duration: 3000,
+          description: "Data ready for export.",
+          duration: 8000,
+          action: {
+            label: (
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4" /> Export CSV
+              </div>
+            ),
+            onClick: () => {
+              downloadPlantsCSV(selectedPlants, `field-data-${Date.now()}.csv`);
+              toast.dismiss();
+            },
+          },
         });
       } else {
         toast.info("No plants found in this specific area.");
@@ -116,6 +129,16 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
     toast.dismiss();
   }, []);
 
+  // Handler for full farm download
+  const handleDownloadAll = () => {
+    if (plants.length === 0) {
+      toast.error("No data to download yet.");
+      return;
+    }
+    downloadPlantsCSV(plants, `full-farm-data-${Date.now()}.csv`);
+    toast.success("Downloading full farm report...");
+  };
+
   return (
     <div className="w-full h-full relative bg-slate-100">
       <Map
@@ -127,11 +150,16 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
         }}
         onLoad={updateBounds}
         style={{ width: "100vw", height: "100vh" }}
-        mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
+        mapStyle={
+          theme === "dark"
+            ? "mapbox://styles/mapbox/dark-v11"
+            : "mapbox://styles/mapbox/satellite-streets-v12"
+        }
         mapboxAccessToken={MAPBOX_TOKEN}
       >
         <GeolocateControl position="top-left" />
         <NavigationControl position="top-left" />
+
         <DrawControl
           position="top-left"
           displayControlsDefault={false}
@@ -207,15 +235,14 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
               <div
                 className={`
                 relative p-2 rounded-full border-2 shadow-lg transition-all cursor-pointer hover:scale-110
-                ${markerColor}
-              `}
+                ${markerColor} border-white
+                `}
               >
                 <Sprout
                   className={`w-5 h-5 ${
                     isPending ? "text-gray-200" : "text-white"
                   }`}
                 />
-
                 {isPending && (
                   <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-0.5 border border-white shadow-sm">
                     <Clock className="w-2 h-2 text-yellow-900" />
@@ -226,6 +253,19 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
           );
         })}
       </Map>
+
+      <div className="absolute top-[260px] left-[10px] z-[10]">
+        <button
+          onClick={handleDownloadAll}
+          className="w-[29px] h-[29px] bg-white rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors"
+          title="Download Full Farm CSV"
+        >
+          <FileDown className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="absolute top-[300px] left-[10px] z-[10]">
+        <ThemeToggle />
+      </div>
     </div>
   );
 }

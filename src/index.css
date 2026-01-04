@@ -11,7 +11,11 @@
   --color-farm-700: #206b40;
   --color-farm-800: #1d5536;
   --color-farm-900: #19462e;
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
+
+@variant dark (&:where(.dark, .dark *));
 
 html,
 body,
