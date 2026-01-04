@@ -20,9 +20,9 @@ export const fetchPlants = createAsyncThunk(
   "plants/fetchPlants",
   async (_, { rejectWithValue }) => {
     try {
-      const plants = await api.getPlants("farmer@gmail.com");
+      const plants = await api.getPlants("sumit.off28@gmail.com");
 
-      const plantsWithStatus = plants.map((p) => ({
+      const plantsWithStatus = plants.map((p: Plant) => ({
         ...p,
         syncStatus: "synced" as const,
         healthStatus: p.healthStatus || "healthy",
@@ -91,7 +91,7 @@ export const uploadPlant = createAsyncThunk(
 
     const tempPlant: Plant = {
       id: plantId,
-      emailId: "farmer@gmail.com",
+      emailId: "sumit.off28@gmail.com",
       imageName: file.name,
       imageUrl: URL.createObjectURL(file),
       latitude: meta.isValid ? meta.latitude : 0,
@@ -147,12 +147,54 @@ export const uploadPlant = createAsyncThunk(
   }
 );
 
+export const silentFetchPlants = createAsyncThunk(
+  "plants/silentFetch",
+  async (_, { getState }) => {
+    try {
+      // 1. Fetch from server (POST)
+      const response = await api.getPlants("farmer@gmail.com");
+
+      const state = getState() as any;
+      const currentIds = state.plants.ids;
+      const localCount = currentIds.length;
+
+      // Handle response structure (array vs { data: [] })
+      const rawData = Array.isArray(response) ? response : response.data || [];
+      const serverCount = rawData.length;
+
+      console.log(`📡 Live Poll: Server ${serverCount} vs Local ${localCount}`);
+
+      // 2. If server has updates (or even if counts match, to ensure freshness)
+      if (serverCount > localCount) {
+        const diff = serverCount - localCount;
+        console.log(`✅ Syncing ${diff} new plants...`);
+
+        // 3. CRITICAL FIX: Mark all server items as 'synced'
+        // This prevents them from looking like "Pending" uploads in the UI
+        const sanitizedData = rawData.map((plant: any) => ({
+          ...plant,
+          syncStatus: "synced", // <--- FORCE THIS
+          // Ensure ID is string to match adapter expectations
+          id: plant.id || plant._id,
+        }));
+
+        return { data: sanitizedData, newCount: diff };
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Silent sync failed", error);
+      return null;
+    }
+  }
+);
+
 const plantsSlice = createSlice({
   name: "plants",
   initialState: plantsAdapter.getInitialState({
     loading: false,
     error: null as string | null,
-    queueSize: 0,
+    queue: [] as any[],
   }),
   reducers: {
     optimisticUpsert: plantsAdapter.upsertOne,
@@ -176,6 +218,11 @@ const plantsSlice = createSlice({
       })
       .addCase(uploadPlant.fulfilled, (state, action) => {
         plantsAdapter.upsertOne(state, action.payload);
+      })
+      .addCase(silentFetchPlants.fulfilled, (state, action) => {
+        if (action.payload) {
+          plantsAdapter.upsertMany(state, action.payload.data);
+        }
       });
   },
 });

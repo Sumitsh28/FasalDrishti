@@ -8,13 +8,22 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchPlants, selectAllPlants } from "../../store/plantsSlice";
 import { pointsWithinPolygon } from "@turf/turf";
 import type { Plant } from "../../types";
-import { Sprout, Clock, Download, FileDown, History } from "lucide-react";
+import {
+  Sprout,
+  Clock,
+  Download,
+  FileDown,
+  History,
+  List as ListIcon,
+} from "lucide-react";
 import DrawControl from "./DrawControl";
 import { toast } from "sonner";
 import { downloadPlantsCSV } from "../../utils/csvHelper";
 import { useTheme } from "../../context/ThemeContext";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import TimeSlider from "./TimeSlider";
+import LiveToggle from "./LiveToggle";
+import PlantInventory from "./PlantInventory";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -45,12 +54,13 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
     zoom: 4,
   });
 
-  const [showTimeline, setShowTimeline] = useState(false); // <--- NEW TOGGLE STATE
+  const [showTimeline, setShowTimeline] = useState(false);
   const [currentDate, setCurrentDate] = useState<number>(Date.now());
   const [dateRange, setDateRange] = useState<{ min: number; max: number }>({
     min: Date.now(),
     max: Date.now(),
   });
+  const [showInventory, setShowInventory] = useState(false);
 
   useEffect(() => {
     if (plants.length === 0) {
@@ -69,13 +79,12 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
 
       if (min !== dateRange.min || max !== dateRange.max) {
         setDateRange({ min, max });
-        setCurrentDate(max); 
+        setCurrentDate(max);
       }
     }
-  }, [plants]); 
+  }, [plants]);
 
   const points = useMemo(() => {
-
     const filteredPlants = !showTimeline
       ? plants
       : plants.filter(
@@ -318,7 +327,38 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
         >
           <History className="w-4 h-4" />
         </button>
+
+        <LiveToggle />
+
+        <button
+          onClick={() => setShowInventory(!showInventory)}
+          className={`
+        w-[29px] h-[29px] rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] 
+        flex items-center justify-center transition-colors
+        ${
+          showInventory
+            ? "bg-blue-600 text-white shadow-blue-200"
+            : "bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50"
+        }
+      `}
+          title="Farm Inventory List"
+        >
+          <ListIcon className="w-4 h-4" />
+        </button>
       </div>
+
+      {showInventory && (
+        <PlantInventory
+          onClose={() => setShowInventory(false)}
+          onSelect={(plant) => {
+            onPlantSelect(plant);
+            mapRef.current?.flyTo({
+              center: [plant.longitude, plant.latitude],
+              zoom: 18,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
