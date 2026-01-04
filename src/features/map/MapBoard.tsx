@@ -8,12 +8,13 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchPlants, selectAllPlants } from "../../store/plantsSlice";
 import { pointsWithinPolygon } from "@turf/turf";
 import type { Plant } from "../../types";
-import { Sprout, Clock, Download, FileDown } from "lucide-react";
+import { Sprout, Clock, Download, FileDown, History } from "lucide-react";
 import DrawControl from "./DrawControl";
 import { toast } from "sonner";
 import { downloadPlantsCSV } from "../../utils/csvHelper";
 import { useTheme } from "../../context/ThemeContext";
 import { ThemeToggle } from "../../components/ThemeToggle";
+import TimeSlider from "./TimeSlider";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -44,14 +45,44 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
     zoom: 4,
   });
 
+  const [showTimeline, setShowTimeline] = useState(false); // <--- NEW TOGGLE STATE
+  const [currentDate, setCurrentDate] = useState<number>(Date.now());
+  const [dateRange, setDateRange] = useState<{ min: number; max: number }>({
+    min: Date.now(),
+    max: Date.now(),
+  });
+
   useEffect(() => {
     if (plants.length === 0) {
       dispatch(fetchPlants());
     }
   }, [dispatch, plants.length]);
 
+  useEffect(() => {
+    if (plants.length > 0) {
+      const timestamps = plants
+        .map((p) => new Date(p.createdAt || Date.now()).getTime())
+        .sort((a, b) => a - b);
+
+      const min = timestamps[0];
+      const max = timestamps[timestamps.length - 1];
+
+      if (min !== dateRange.min || max !== dateRange.max) {
+        setDateRange({ min, max });
+        setCurrentDate(max); 
+      }
+    }
+  }, [plants]); 
+
   const points = useMemo(() => {
-    const pts = plants.map((plant) => ({
+
+    const filteredPlants = !showTimeline
+      ? plants
+      : plants.filter(
+          (p) => new Date(p.createdAt || Date.now()).getTime() <= currentDate
+        );
+
+    const pts = filteredPlants.map((plant) => ({
       type: "Feature" as const,
       properties: {
         cluster: false,
@@ -66,7 +97,7 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
 
     pointsRef.current = pts;
     return pts;
-  }, [plants]);
+  }, [plants, currentDate, showTimeline]);
 
   const { clusters, supercluster } = useSupercluster({
     points,
@@ -129,7 +160,6 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
     toast.dismiss();
   }, []);
 
-  // Handler for full farm download
   const handleDownloadAll = () => {
     if (plants.length === 0) {
       toast.error("No data to download yet.");
@@ -254,17 +284,40 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
         })}
       </Map>
 
-      <div className="absolute top-[260px] left-[10px] z-[10]">
+      {showTimeline && plants.length > 1 && (
+        <TimeSlider
+          minDate={dateRange.min}
+          maxDate={dateRange.max}
+          currentDate={currentDate}
+          onChange={setCurrentDate}
+        />
+      )}
+
+      <div className="absolute top-[220px] left-[10px] z-[10] flex flex-col gap-2">
         <button
           onClick={handleDownloadAll}
-          className="w-[29px] h-[29px] bg-white rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors"
+          className="w-[29px] h-[29px] bg-white dark:bg-slate-800 dark:text-gray-200 rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors"
           title="Download Full Farm CSV"
         >
           <FileDown className="w-4 h-4" />
         </button>
-      </div>
-      <div className="absolute top-[300px] left-[10px] z-[10]">
+
         <ThemeToggle />
+
+        <button
+          onClick={() => setShowTimeline(!showTimeline)}
+          className={`
+            w-[29px] h-[29px] rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] flex items-center justify-center transition-colors
+            ${
+              showTimeline
+                ? "bg-green-600 text-white shadow-green-200"
+                : "bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50"
+            }
+          `}
+          title="Toggle Time Travel"
+        >
+          <History className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
