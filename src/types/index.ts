@@ -17,7 +17,7 @@ export interface Plant {
   createdAt?: string;
   updatedAt?: string;
 
-  syncStatus?: "synced" | "pending" | "failed" | "extracting";
+  syncStatus?: "synced" | "pending" | "failed" | "extracting" | "error";
 }
 
 export interface FetchPlantsResponse {

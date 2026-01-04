@@ -1,15 +1,34 @@
-// src/App.tsx
 import { useState } from "react";
 import MapBoard from "./features/map/MapBoard";
 import UploadModal from "./features/upload/UploadModal";
 import { Plus } from "lucide-react";
 
+// ADD THESE IMPORTS
+import { Toaster } from "sonner";
+import NetworkListener from "./components/NetworkListener";
+import PlantSidebar from "./features/map/PlantSidebar";
+import type { Plant } from "./types";
+import StatsOverlay from "./features/map/StatsOverlay";
+
 function App() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
 
   return (
     <div className="w-full h-screen overflow-hidden relative">
-      <MapBoard />
+      <NetworkListener />
+
+      <Toaster position="top-center" richColors />
+      <StatsOverlay />
+
+      <MapBoard onPlantSelect={setSelectedPlant} />
+
+      {selectedPlant && (
+        <PlantSidebar
+          plant={selectedPlant}
+          onClose={() => setSelectedPlant(null)}
+        />
+      )}
 
       <div className="absolute bottom-8 right-8 z-50">
         <button

@@ -1,0 +1,146 @@
+import {
+  X,
+  Calendar,
+  MapPin,
+  CheckCircle2,
+  CloudOff,
+  RefreshCw,
+  AlertCircle,
+} from "lucide-react";
+import type { Plant } from "../../types";
+import { useAppDispatch } from "../../store/hooks";
+import { processSyncQueue } from "../../store/plantsSlice";
+
+interface PlantSidebarProps {
+  plant: Plant | null;
+  onClose: () => void;
+}
+
+export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
+  const dispatch = useAppDispatch();
+
+  if (!plant) return null;
+
+  const isSynced = plant.syncStatus === "synced";
+  const isError = plant.syncStatus === "error";
+
+  return (
+    <div className="absolute top-4 left-4 bottom-4 w-80 bg-white rounded-xl shadow-2xl z-[1000] overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
+      <div className="p-4 border-b flex items-center justify-between bg-gray-50">
+        <h2 className="font-bold text-lg text-gray-800">Plant Details</h2>
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+        >
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="relative aspect-square w-full bg-gray-100">
+          <img
+            src={plant.imageUrl}
+            alt={plant.imageName}
+            className="w-full h-full object-cover"
+          />
+
+          <div className="absolute top-2 right-2">
+            {isSynced ? (
+              <span className="bg-green-100 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-green-200">
+                <CheckCircle2 className="w-3 h-3" /> Synced
+              </span>
+            ) : isError ? (
+              <span className="bg-red-100 text-red-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-200">
+                <AlertCircle className="w-3 h-3" /> Failed
+              </span>
+            ) : (
+              <span className="bg-yellow-100 text-yellow-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-yellow-200">
+                <CloudOff className="w-3 h-3" /> Pending
+              </span>
+            )}
+          </div>
+        </div>
+
+        {!isSynced && (
+          <div className="p-4 pb-0">
+            <button
+              onClick={() => dispatch(processSyncQueue())}
+              className={`w-full text-white text-sm font-semibold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 ${
+                isError
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              {isError ? "Retry Failed Upload" : "Force Sync Now"}
+            </button>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              {isError
+                ? "This item failed to upload. Check connection and retry."
+                : "This item is queued for upload."}
+            </p>
+          </div>
+        )}
+
+        <div className="p-5 space-y-6">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              File Name
+            </label>
+            <p className="text-sm font-medium text-gray-900 break-all leading-relaxed">
+              {plant.imageName}
+            </p>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-green-50 rounded-lg">
+              <MapPin className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Location
+              </label>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="bg-gray-50 p-2 rounded border border-gray-100">
+                  <span className="text-[10px] text-gray-500 block">Lat</span>
+                  <p className="text-sm font-mono font-medium">
+                    {plant.latitude.toFixed(6)}
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded border border-gray-100">
+                  <span className="text-[10px] text-gray-500 block">Lng</span>
+                  <p className="text-sm font-mono font-medium">
+                    {plant.longitude.toFixed(6)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Calendar className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Captured On
+              </label>
+              <p className="text-sm font-medium text-gray-900 mt-1">
+                {new Date(plant.createdAt || Date.now()).toLocaleDateString(
+                  "en-IN",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

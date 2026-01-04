@@ -8,6 +8,7 @@ import { uploadImageToCloudinary } from "../services/cloudinary";
 import { api } from "../services/api";
 import { offlineService } from "../services/db";
 import { parsePlantFilename } from "../utils/fileParser";
+import { toast } from "sonner";
 
 const plantsAdapter = createEntityAdapter<Plant, string>({
   selectId: (plant) =>
@@ -41,7 +42,7 @@ export const processSyncQueue = createAsyncThunk(
     const queue = await offlineService.getQueue();
     if (queue.length === 0) return;
 
-    console.log(`📡 Syncing ${queue.length} offline items via API...`);
+    toast.info(`Syncing ${queue.length} offline items...`);
 
     for (const item of queue) {
       try {
@@ -57,6 +58,8 @@ export const processSyncQueue = createAsyncThunk(
         console.error("Sync failed for item", item.id);
       }
     }
+
+    toast.success("Offline sync complete!");
   }
 );
 
@@ -91,6 +94,7 @@ export const uploadPlant = createAsyncThunk(
 
     if (!navigator.onLine && !isSyncing) {
       await offlineService.addToQueue(file, plantId);
+      toast.warning("Offline. Saved to queue.");
       return { ...tempPlant, syncStatus: "pending" as const };
     }
 
@@ -108,10 +112,12 @@ export const uploadPlant = createAsyncThunk(
         longitude: extractRes.data.longitude,
       });
 
+      if (!isSyncing) toast.success("Plant uploaded!");
+
       return { ...saveRes.data, syncStatus: "synced" as const };
     } catch (error: any) {
       if (!isSyncing) await offlineService.addToQueue(file, plantId);
-      console.error("Upload flow failed:", error);
+      toast.error("Upload failed. Saved to draft queue.");
       return rejectWithValue(error.message || "Upload failed");
     }
   }
