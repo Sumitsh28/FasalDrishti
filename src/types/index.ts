@@ -19,6 +19,10 @@ export interface Plant {
 
   syncStatus?: "synced" | "pending" | "failed" | "extracting" | "error";
   healthStatus?: "healthy" | "pest" | "disease" | "water-stress";
+
+  detectedPlant?: string;
+  aiDiagnosis?: string;
+  confidence?: number;
 }
 
 export interface FetchPlantsResponse {

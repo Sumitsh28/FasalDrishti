@@ -9,10 +9,14 @@ import {
   Bug,
   AlertTriangle,
   Droplets,
+  Sparkles,
+  ScanEye,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { uploadPlant } from "../../store/plantsSlice";
+import { analyzePlantWithAI } from "../../services/openai";
 import type { Plant } from "../../types";
+import { toast } from "sonner";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -56,15 +60,21 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   const [preview, setPreview] = useState<string | null>(null);
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
-
   const [healthStatus, setHealthStatus] =
     useState<Plant["healthStatus"]>("healthy");
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiDiagnosis, setAiDiagnosis] = useState<string | null>(null);
+  const [detectedPlant, setDetectedPlant] = useState<string | null>(null);
+  const [aiConfidence, setAiConfidence] = useState<number>(0);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
       setFileToUpload(file);
       setPreview(URL.createObjectURL(file));
+      setAiDiagnosis(null);
+      setDetectedPlant(null);
     }
   }, []);
 
@@ -74,6 +84,34 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
     maxFiles: 1,
   });
 
+  const handleAIAnalyze = async () => {
+    if (!fileToUpload) return;
+
+    setIsAnalyzing(true);
+    setAiDiagnosis(null);
+
+    try {
+      const result = await analyzePlantWithAI(fileToUpload);
+
+      if (result.healthStatus !== "error") {
+        setHealthStatus(result.healthStatus);
+        setDetectedPlant(result.plantName);
+        setAiDiagnosis(result.diagnosis);
+        setAiConfidence(result.confidence);
+        toast.success(`Detected: ${result.plantName}`, {
+          description: `AI Confidence: ${result.confidence}%`,
+        });
+      } else {
+        toast.error("Could not identify a plant in this image.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("AI Analysis failed. Please select manually.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (!fileToUpload) return;
 
@@ -81,6 +119,9 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       uploadPlant({
         file: fileToUpload,
         healthStatus,
+        detectedPlant: detectedPlant || undefined,
+        aiDiagnosis: aiDiagnosis || undefined,
+        confidence: aiConfidence,
       })
     );
 
@@ -89,6 +130,9 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       setPreview(null);
       setFileToUpload(null);
       setHealthStatus("healthy");
+      setAiDiagnosis(null);
+      setDetectedPlant(null);
+      setAiConfidence(0);
     } else {
       alert("Upload failed: " + resultAction.payload);
     }
@@ -103,7 +147,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
           <h2 className="text-2xl font-bold text-gray-800">Add New Plant</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-1 hover:bg-gray-100 rounded-full"
           >
             <X className="w-6 h-6 text-gray-500" />
           </button>
@@ -112,14 +156,11 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         {!preview ? (
           <div
             {...getRootProps()}
-            className={`
-              border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors
-              ${
-                isDragActive
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-300 hover:border-green-400"
-              }
-            `}
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+              isDragActive
+                ? "border-green-500 bg-green-50"
+                : "border-gray-300 hover:border-green-400"
+            }`}
           >
             <input {...getInputProps()} />
             <div className="flex flex-col items-center gap-3">
@@ -127,50 +168,103 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                 <UploadCloud className="w-8 h-8" />
               </div>
               <p className="text-sm font-medium text-gray-600">
-                {isDragActive
-                  ? "Drop the plant image here"
-                  : "Click or drag image to upload"}
+                Click or drag image to upload
               </p>
-              <p className="text-xs text-gray-400">JPG or PNG (Max 10MB)</p>
             </div>
           </div>
         ) : (
-          <div className="relative rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full h-48 object-cover"
-            />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setPreview(null);
-                setFileToUpload(null);
-              }}
-              className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div className="space-y-4">
+            <div className="relative rounded-lg overflow-hidden border border-gray-200 shadow-sm group">
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-48 object-cover"
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreview(null);
+                  setFileToUpload(null);
+                }}
+                className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full hover:bg-red-100 hover:text-red-600 shadow-sm"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {!aiDiagnosis && !isAnalyzing && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={handleAIAnalyze}
+                    className="bg-black/75 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 hover:bg-black"
+                  >
+                    <Sparkles className="w-3 h-3 text-yellow-400" />
+                    Analyze with AI
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {(isAnalyzing || aiDiagnosis) && (
+              <div
+                className={`p-4 rounded-lg border ${
+                  aiDiagnosis
+                    ? "bg-indigo-50 border-indigo-100"
+                    : "bg-gray-50 border-gray-100"
+                }`}
+              >
+                {isAnalyzing ? (
+                  <div className="flex items-center gap-3 text-indigo-600">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-sm font-medium animate-pulse">
+                      Analyzing leaf patterns...
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-indigo-500" />
+                      <span className="text-sm font-bold text-indigo-900">
+                        AI Analysis Complete
+                      </span>
+                    </div>
+                    <p className="text-sm text-indigo-800 leading-relaxed">
+                      <span className="font-semibold">
+                        Detected {detectedPlant}:
+                      </span>{" "}
+                      {aiDiagnosis}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
         <div className="mt-6">
-          <label className="text-sm font-semibold text-gray-700 mb-3 block">
-            Crop Health Status
-          </label>
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-sm font-semibold text-gray-700">
+              Crop Health Status
+            </label>
+            {fileToUpload && !aiDiagnosis && !isAnalyzing && (
+              <button
+                onClick={handleAIAnalyze}
+                className="text-xs text-indigo-600 font-medium flex items-center gap-1 hover:underline"
+              >
+                <ScanEye className="w-3 h-3" /> Auto-Detect
+              </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             {HEALTH_OPTIONS.map((option) => (
               <button
                 key={option.id}
                 onClick={() => setHealthStatus(option.id as any)}
-                className={`
-                  flex items-center gap-2 p-3 rounded-lg border transition-all
-                  ${
-                    healthStatus === option.id
-                      ? `${option.color} border-transparent ring-2 ${option.ring}`
-                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                  }
-                `}
+                className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                  healthStatus === option.id
+                    ? `${option.color} border-transparent ring-2 ${option.ring}`
+                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                }`}
               >
                 <option.icon className="w-4 h-4" />
                 <span className="text-sm font-medium">{option.label}</span>
@@ -182,33 +276,25 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         <div className="mt-8 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+            className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
           >
             Cancel
           </button>
           <button
             onClick={handleUpload}
-            disabled={!fileToUpload || isLoading}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-white transition-all
-              ${
-                !fileToUpload || isLoading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl active:scale-95"
-              }
-            `}
+            disabled={!fileToUpload || isLoading || isAnalyzing}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-white transition-all ${
+              !fileToUpload || isLoading || isAnalyzing
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl active:scale-95"
+            }`}
           >
             {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Processing...
-              </>
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <>
-                <ImageIcon className="w-5 h-5" />
-                Upload Plant
-              </>
+              <ImageIcon className="w-5 h-5" />
             )}
+            {isLoading ? "Processing..." : "Upload Plant"}
           </button>
         </div>
       </div>

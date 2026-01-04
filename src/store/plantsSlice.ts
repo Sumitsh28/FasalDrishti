@@ -72,11 +72,17 @@ export const uploadPlant = createAsyncThunk(
       file,
       isSyncing = false,
       healthStatus = "healthy",
+      detectedPlant,
+      aiDiagnosis,
+      confidence,
     }: {
       file: File;
       isSyncing?: boolean;
       tempIdToRemove?: string;
       healthStatus?: Plant["healthStatus"];
+      detectedPlant?: string;
+      aiDiagnosis?: string;
+      confidence?: number;
     },
     { dispatch, rejectWithValue }
   ) => {
@@ -94,6 +100,9 @@ export const uploadPlant = createAsyncThunk(
       healthStatus: healthStatus,
       createdAt: new Date().toISOString(),
       _id: undefined,
+      detectedPlant,
+      aiDiagnosis,
+      confidence,
     };
 
     if (!isSyncing) {
@@ -126,6 +135,9 @@ export const uploadPlant = createAsyncThunk(
         ...saveRes.data,
         syncStatus: "synced" as const,
         healthStatus: healthStatus,
+        detectedPlant,
+        aiDiagnosis,
+        confidence,
       };
     } catch (error: any) {
       if (!isSyncing) await offlineService.addToQueue(file, plantId);

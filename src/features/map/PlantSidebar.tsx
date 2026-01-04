@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Droplets,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import type { Plant } from "../../types";
 import { useAppDispatch } from "../../store/hooks";
@@ -132,6 +133,36 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
               <span className="font-bold text-sm">{health.label}</span>
             </div>
           </div>
+
+          {plant.aiDiagnosis && (
+            <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-100">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1 bg-white rounded-md shadow-sm">
+                  <Sparkles className="w-3 h-3 text-indigo-600" />
+                </div>
+                <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                  AI Agronomist
+                </span>
+                {plant.confidence && (
+                  <span className="ml-auto text-[10px] font-medium text-indigo-500 bg-white px-1.5 py-0.5 rounded-full">
+                    {plant.confidence}% Conf.
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-indigo-800">
+                  Detected:{" "}
+                  <span className="text-indigo-900">
+                    {plant.detectedPlant || "Unknown Crop"}
+                  </span>
+                </p>
+                <p className="text-xs text-indigo-700 leading-relaxed italic">
+                  "{plant.aiDiagnosis}"
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
