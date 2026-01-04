@@ -3,7 +3,7 @@ import {
   createEntityAdapter,
   createAsyncThunk,
 } from "@reduxjs/toolkit";
-import type { Plant, FetchPlantsResponse } from "../types";
+import type { Plant } from "../types";
 import { uploadImageToCloudinary } from "../services/cloudinary";
 import { api } from "../services/api";
 import { offlineService } from "../services/db";
@@ -25,6 +25,7 @@ export const fetchPlants = createAsyncThunk(
       const plantsWithStatus = plants.map((p) => ({
         ...p,
         syncStatus: "synced" as const,
+        healthStatus: p.healthStatus || "healthy",
       }));
 
       return plantsWithStatus;
@@ -51,6 +52,7 @@ export const processSyncQueue = createAsyncThunk(
             file: item.file,
             isSyncing: true,
             tempIdToRemove: item.plantId,
+            healthStatus: "healthy",
           })
         ).unwrap();
         await offlineService.removeFromQueue(item.id);
@@ -69,11 +71,16 @@ export const uploadPlant = createAsyncThunk(
     {
       file,
       isSyncing = false,
-    }: { file: File; isSyncing?: boolean; tempIdToRemove?: string },
+      healthStatus = "healthy",
+    }: {
+      file: File;
+      isSyncing?: boolean;
+      tempIdToRemove?: string;
+      healthStatus?: Plant["healthStatus"];
+    },
     { dispatch, rejectWithValue }
   ) => {
     const meta = parsePlantFilename(file.name);
-
     const plantId = meta.isValid ? meta.plantId : `temp-${Date.now()}`;
 
     const tempPlant: Plant = {
@@ -84,6 +91,7 @@ export const uploadPlant = createAsyncThunk(
       latitude: meta.isValid ? meta.latitude : 0,
       longitude: meta.isValid ? meta.longitude : 0,
       syncStatus: navigator.onLine || isSyncing ? "extracting" : "pending",
+      healthStatus: healthStatus,
       createdAt: new Date().toISOString(),
       _id: undefined,
     };
@@ -114,7 +122,11 @@ export const uploadPlant = createAsyncThunk(
 
       if (!isSyncing) toast.success("Plant uploaded!");
 
-      return { ...saveRes.data, syncStatus: "synced" as const };
+      return {
+        ...saveRes.data,
+        syncStatus: "synced" as const,
+        healthStatus: healthStatus,
+      };
     } catch (error: any) {
       if (!isSyncing) await offlineService.addToQueue(file, plantId);
       toast.error("Upload failed. Saved to draft queue.");

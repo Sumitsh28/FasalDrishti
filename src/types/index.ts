@@ -18,6 +18,7 @@ export interface Plant {
   updatedAt?: string;
 
   syncStatus?: "synced" | "pending" | "failed" | "extracting" | "error";
+  healthStatus?: "healthy" | "pest" | "disease" | "water-stress";
 }
 
 export interface FetchPlantsResponse {

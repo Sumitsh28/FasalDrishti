@@ -6,6 +6,10 @@ import {
   CloudOff,
   RefreshCw,
   AlertCircle,
+  Bug,
+  AlertTriangle,
+  Droplets,
+  Activity,
 } from "lucide-react";
 import type { Plant } from "../../types";
 import { useAppDispatch } from "../../store/hooks";
@@ -16,6 +20,40 @@ interface PlantSidebarProps {
   onClose: () => void;
 }
 
+const getHealthConfig = (status?: string) => {
+  switch (status) {
+    case "pest":
+      return {
+        icon: Bug,
+        label: "Pest Detected",
+        color: "text-yellow-700 bg-yellow-50 border-yellow-200",
+        iconColor: "text-yellow-600",
+      };
+    case "disease":
+      return {
+        icon: AlertTriangle,
+        label: "Disease Detected",
+        color: "text-red-700 bg-red-50 border-red-200",
+        iconColor: "text-red-600",
+      };
+    case "water-stress":
+      return {
+        icon: Droplets,
+        label: "Water Stress",
+        color: "text-blue-700 bg-blue-50 border-blue-200",
+        iconColor: "text-blue-600",
+      };
+    case "healthy":
+    default:
+      return {
+        icon: CheckCircle2,
+        label: "Healthy Crop",
+        color: "text-green-700 bg-green-50 border-green-200",
+        iconColor: "text-green-600",
+      };
+  }
+};
+
 export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
   const dispatch = useAppDispatch();
 
@@ -23,6 +61,9 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
 
   const isSynced = plant.syncStatus === "synced";
   const isError = plant.syncStatus === "error";
+
+  const health = getHealthConfig(plant.healthStatus);
+  const HealthIcon = health.icon;
 
   return (
     <div className="absolute top-4 left-4 bottom-4 w-80 bg-white rounded-xl shadow-2xl z-[1000] overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
@@ -46,15 +87,15 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
 
           <div className="absolute top-2 right-2">
             {isSynced ? (
-              <span className="bg-green-100 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-green-200">
+              <span className="bg-white/90 backdrop-blur text-green-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-green-200">
                 <CheckCircle2 className="w-3 h-3" /> Synced
               </span>
             ) : isError ? (
-              <span className="bg-red-100 text-red-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-200">
+              <span className="bg-white/90 backdrop-blur text-red-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-200">
                 <AlertCircle className="w-3 h-3" /> Failed
               </span>
             ) : (
-              <span className="bg-yellow-100 text-yellow-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-yellow-200">
+              <span className="bg-white/90 backdrop-blur text-yellow-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-yellow-200">
                 <CloudOff className="w-3 h-3" /> Pending
               </span>
             )}
@@ -74,15 +115,24 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
               <RefreshCw className="w-4 h-4" />
               {isError ? "Retry Failed Upload" : "Force Sync Now"}
             </button>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              {isError
-                ? "This item failed to upload. Check connection and retry."
-                : "This item is queued for upload."}
-            </p>
           </div>
         )}
 
         <div className="p-5 space-y-6">
+          <div>
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+              Health Status
+            </label>
+            <div
+              className={`p-3 rounded-lg border flex items-center gap-3 ${health.color}`}
+            >
+              <div className={`p-1.5 bg-white/60 rounded-full`}>
+                <HealthIcon className={`w-5 h-5 ${health.iconColor}`} />
+              </div>
+              <span className="font-bold text-sm">{health.label}</span>
+            </div>
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
               File Name
@@ -93,8 +143,8 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-green-50 rounded-lg">
-              <MapPin className="w-5 h-5 text-green-600" />
+            <div className="p-2 bg-gray-50 rounded-lg">
+              <MapPin className="w-5 h-5 text-gray-600" />
             </div>
             <div className="flex-1">
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">

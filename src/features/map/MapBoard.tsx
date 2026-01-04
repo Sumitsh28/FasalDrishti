@@ -184,6 +184,15 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
           const isPending = plant.syncStatus !== "synced";
           const isError = plant.syncStatus === "error";
 
+          let markerColor = "bg-green-600";
+          if (plant.healthStatus === "pest") markerColor = "bg-yellow-500";
+          if (plant.healthStatus === "disease") markerColor = "bg-red-500";
+          if (plant.healthStatus === "water-stress")
+            markerColor = "bg-blue-500";
+
+          if (isError) markerColor = "bg-red-600";
+          if (isPending) markerColor = "bg-gray-500/80";
+
           return (
             <Marker
               key={`plant-${plant.id || plant._id}`}
@@ -198,13 +207,7 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
               <div
                 className={`
                 relative p-2 rounded-full border-2 shadow-lg transition-all cursor-pointer hover:scale-110
-                ${
-                  isPending
-                    ? "bg-gray-500/80 border-gray-300 animate-pulse"
-                    : isError
-                    ? "bg-red-500 border-white"
-                    : "bg-green-600 border-white"
-                }
+                ${markerColor}
               `}
               >
                 <Sprout
