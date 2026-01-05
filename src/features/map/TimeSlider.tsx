@@ -1,4 +1,4 @@
-import { Play, Pause, CalendarDays, History, RotateCcw } from "lucide-react";
+import { Play, Pause, History, RotateCcw } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 

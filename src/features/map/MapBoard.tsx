@@ -24,7 +24,6 @@ import { ThemeToggle } from "../../components/ThemeToggle";
 import TimeSlider from "./TimeSlider";
 import LiveToggle from "./LiveToggle";
 import PlantInventory from "./PlantInventory";
-import StatsOverlay from "./StatsOverlay";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 

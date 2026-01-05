@@ -4,7 +4,6 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import App from "./App";
 import "./index.css";
-import { Toaster } from "sonner";
 import { ThemeProvider } from "./context/ThemeContext";
 
 // (window as any).store = store;
