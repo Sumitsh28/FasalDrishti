@@ -6,6 +6,7 @@
 
 _The FasalDrishti Command Center showing 10,000+ data points clustered for performance._
 
+Demo Video: https://youtu.be/GtsG8Un8qfw
 ---
 
 ## 🚀 Key Features
@@ -119,7 +120,11 @@ Called on app initialization (`useEffect`) and periodic polling ("Live Mode").
 
 - **Navigation:** Use the top-right controls to Zoom, Tilt, and Geolocate.
 - **Clustering:** Zoom out to see grouped "bubbles." Click a cluster to zoom in.
+  <img width="3358" height="2098" alt="image" src="https://github.com/user-attachments/assets/250de47f-8e87-42cf-904d-621525cab72d" />
+
 - **Filtering:** Use the **Time Slider** at the bottom to filter crops by planting date.
+<img width="3360" height="2100" alt="image" src="https://github.com/user-attachments/assets/0e33e61e-51f8-449b-aef1-9e7042880a72" />
+
 
 ### 2. Adding Data (Offline Capable)
 
@@ -129,12 +134,25 @@ Called on app initialization (`useEffect`) and periodic polling ("Live Mode").
 
 - _If Online:_ It syncs instantly.
 - _If Offline:_ It enters the **Sync Queue** (Yellow Badge) and auto-uploads later.
+<img width="3360" height="2100" alt="image" src="https://github.com/user-attachments/assets/21afb917-edef-4314-a251-15c25921c8f4" />
+<img width="3360" height="2100" alt="image" src="https://github.com/user-attachments/assets/edca11e4-df26-4814-9126-a94de3d493eb" />
+
+
 
 ### 3. Analytics & Tools
 
 - **Draw Tool:** Click the Hexagon icon to draw a field boundary. The app will calculate how many plants are inside that specific zone.
+<img width="3360" height="2100" alt="image" src="https://github.com/user-attachments/assets/ba471e35-c09d-456e-a23c-17fcd7d43c69" />
+
 - **Inventory:** Open the sidebar to see a virtualized list of all crops.
+<img width="3352" height="2086" alt="image" src="https://github.com/user-attachments/assets/ec434cc4-a63a-4fc1-9b31-f605ab1d1819" />
+
 - **Comparison:** Click a plant, then check "Location History" to launch the **Split-Screen Slider**.
+<img width="3360" height="2100" alt="image" src="https://github.com/user-attachments/assets/f1d6556a-dc98-46db-b918-23455a5b7c6e" />
+
+- **Stats & Analytics:** Open the dashboard to view real-time insights, including crop health distribution, top crops, and activity trends across your data points.
+<img width="3360" height="2100" alt="image" src="https://github.com/user-attachments/assets/6aa2dfae-d197-4acb-9e30-13fa8248a7bf" />
+
 
 ---
 
