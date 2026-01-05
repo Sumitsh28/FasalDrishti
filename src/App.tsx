@@ -3,7 +3,6 @@ import MapBoard from "./features/map/MapBoard";
 import UploadModal from "./features/upload/UploadModal";
 import { Plus } from "lucide-react";
 
-// ADD THESE IMPORTS
 import { Toaster } from "sonner";
 import NetworkListener from "./components/NetworkListener";
 import PlantSidebar from "./features/map/PlantSidebar";

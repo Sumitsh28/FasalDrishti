@@ -34,8 +34,7 @@ export const api = {
 
   getPlants: async (emailId: string) => {
     const response = await axios.post(`${API_BASE}/get-plant-location-data`, {
-      emailId,
-      _t: Date.now(),
+      emailId: emailId,
     });
     return response.data;
   },

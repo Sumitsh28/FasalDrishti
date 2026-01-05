@@ -20,16 +20,25 @@ export const fetchPlants = createAsyncThunk(
   "plants/fetchPlants",
   async (_, { rejectWithValue }) => {
     try {
-      const plants = await api.getPlants("sumit.off28@gmail.com");
+      const response = await api.getPlants("sumit.off28@gmail.com");
 
-      const plantsWithStatus = plants.map((p: Plant) => ({
+      const rawData = Array.isArray(response) ? response : response.data || [];
+
+      const plantsWithStatus = rawData.map((p: any) => ({
         ...p,
+        id: p.id || p._id,
+
         syncStatus: "synced" as const,
+
         healthStatus: p.healthStatus || "healthy",
+
+        latitude: Number(p.latitude),
+        longitude: Number(p.longitude),
       }));
 
       return plantsWithStatus;
     } catch (error: any) {
+      console.error("Fetch failed:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch plants"
       );
@@ -151,30 +160,24 @@ export const silentFetchPlants = createAsyncThunk(
   "plants/silentFetch",
   async (_, { getState }) => {
     try {
-      // 1. Fetch from server (POST)
       const response = await api.getPlants("farmer@gmail.com");
 
       const state = getState() as any;
       const currentIds = state.plants.ids;
       const localCount = currentIds.length;
 
-      // Handle response structure (array vs { data: [] })
       const rawData = Array.isArray(response) ? response : response.data || [];
       const serverCount = rawData.length;
 
       console.log(`📡 Live Poll: Server ${serverCount} vs Local ${localCount}`);
 
-      // 2. If server has updates (or even if counts match, to ensure freshness)
       if (serverCount > localCount) {
         const diff = serverCount - localCount;
         console.log(`✅ Syncing ${diff} new plants...`);
 
-        // 3. CRITICAL FIX: Mark all server items as 'synced'
-        // This prevents them from looking like "Pending" uploads in the UI
         const sanitizedData = rawData.map((plant: any) => ({
           ...plant,
-          syncStatus: "synced", // <--- FORCE THIS
-          // Ensure ID is string to match adapter expectations
+          syncStatus: "synced",
           id: plant.id || plant._id,
         }));
 

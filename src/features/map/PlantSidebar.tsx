@@ -9,10 +9,10 @@ import {
   Bug,
   AlertTriangle,
   Droplets,
-  Activity,
   Sparkles,
   History,
   ArrowRightLeft,
+  FileText,
 } from "lucide-react";
 import { distance } from "@turf/turf";
 import type { Plant } from "../../types";
@@ -32,30 +32,34 @@ const getHealthConfig = (status?: string) => {
       return {
         icon: Bug,
         label: "Pest Detected",
-        color: "text-yellow-700 bg-yellow-50 border-yellow-200",
-        iconColor: "text-yellow-600",
+        color:
+          "text-yellow-700 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-900/20 dark:border-yellow-800",
+        iconColor: "text-yellow-600 dark:text-yellow-400",
       };
     case "disease":
       return {
         icon: AlertTriangle,
         label: "Disease Detected",
-        color: "text-red-700 bg-red-50 border-red-200",
-        iconColor: "text-red-600",
+        color:
+          "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800",
+        iconColor: "text-red-600 dark:text-red-400",
       };
     case "water-stress":
       return {
         icon: Droplets,
         label: "Water Stress",
-        color: "text-blue-700 bg-blue-50 border-blue-200",
-        iconColor: "text-blue-600",
+        color:
+          "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-900/20 dark:border-blue-800",
+        iconColor: "text-blue-600 dark:text-blue-400",
       };
     case "healthy":
     default:
       return {
         icon: CheckCircle2,
         label: "Healthy Crop",
-        color: "text-green-700 bg-green-50 border-green-200",
-        iconColor: "text-green-600",
+        color:
+          "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800",
+        iconColor: "text-green-600 dark:text-green-400",
       };
   }
 };
@@ -74,9 +78,7 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
     return allPlants
       .filter((p) => {
         if (p.id === plant.id) return false;
-
         const dist = distance(targetPoint, [p.longitude, p.latitude]);
-
         return dist < 0.005;
       })
       .sort(
@@ -96,19 +98,21 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
 
   return (
     <>
-      <div className="absolute top-4 left-4 bottom-4 w-80 bg-white rounded-xl shadow-2xl z-[1000] overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
-        <div className="p-4 border-b flex items-center justify-between bg-gray-50">
-          <h2 className="font-bold text-lg text-gray-800">Plant Details</h2>
+      <div className="absolute top-4 left-4 bottom-4 w-80 bg-white dark:bg-slate-900 border-r dark:border-slate-800 rounded-xl shadow-2xl z-[1000] overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
+        <div className="p-4 border-b dark:border-slate-800 flex items-center justify-between bg-gray-50 dark:bg-slate-950">
+          <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100">
+            Plant Details
+          </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+            className="p-1 hover:bg-gray-200 dark:hover:bg-slate-800 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="relative aspect-square w-full bg-gray-100">
+          <div className="relative aspect-square w-full bg-gray-100 dark:bg-slate-800">
             <img
               src={plant.imageUrl}
               alt={plant.imageName}
@@ -117,15 +121,15 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
 
             <div className="absolute top-2 right-2">
               {isSynced ? (
-                <span className="bg-white/90 backdrop-blur text-green-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-green-200">
+                <span className="bg-white/90 dark:bg-slate-900/90 backdrop-blur text-green-700 dark:text-green-400 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-green-200 dark:border-green-800">
                   <CheckCircle2 className="w-3 h-3" /> Synced
                 </span>
               ) : isError ? (
-                <span className="bg-white/90 backdrop-blur text-red-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-200">
+                <span className="bg-white/90 dark:bg-slate-900/90 backdrop-blur text-red-700 dark:text-red-400 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-red-200 dark:border-red-800">
                   <AlertCircle className="w-3 h-3" /> Failed
                 </span>
               ) : (
-                <span className="bg-white/90 backdrop-blur text-yellow-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-yellow-200">
+                <span className="bg-white/90 dark:bg-slate-900/90 backdrop-blur text-yellow-700 dark:text-yellow-400 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-yellow-200 dark:border-yellow-800">
                   <CloudOff className="w-3 h-3" /> Pending
                 </span>
               )}
@@ -150,13 +154,15 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
 
           <div className="p-5 space-y-6">
             <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+              <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-2">
                 Health Status
               </label>
               <div
                 className={`p-3 rounded-lg border flex items-center gap-3 ${health.color}`}
               >
-                <div className={`p-1.5 bg-white/60 rounded-full`}>
+                <div
+                  className={`p-1.5 bg-white/60 dark:bg-black/20 rounded-full`}
+                >
                   <HealthIcon className={`w-5 h-5 ${health.iconColor}`} />
                 </div>
                 <span className="font-bold text-sm">{health.label}</span>
@@ -164,29 +170,29 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
             </div>
 
             {plant.aiDiagnosis && (
-              <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-100">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1 bg-white rounded-md shadow-sm">
-                    <Sparkles className="w-3 h-3 text-indigo-600" />
+                  <div className="p-1 bg-white dark:bg-indigo-950 rounded-md shadow-sm">
+                    <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">
                     AI Agronomist
                   </span>
                   {plant.confidence && (
-                    <span className="ml-auto text-[10px] font-medium text-indigo-500 bg-white px-1.5 py-0.5 rounded-full">
+                    <span className="ml-auto text-[10px] font-medium text-indigo-500 dark:text-indigo-300 bg-white dark:bg-indigo-950/50 px-1.5 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
                       {plant.confidence}% Conf.
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-indigo-800">
+                  <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-200">
                     Detected:{" "}
-                    <span className="text-indigo-900">
+                    <span className="text-indigo-900 dark:text-indigo-100">
                       {plant.detectedPlant || "Unknown Crop"}
                     </span>
                   </p>
-                  <p className="text-xs text-indigo-700 leading-relaxed italic">
+                  <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed italic">
                     "{plant.aiDiagnosis}"
                   </p>
                 </div>
@@ -195,7 +201,7 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
 
             {locationHistory.length > 0 && (
               <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2 flex items-center gap-2">
+                <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-2 flex items-center gap-2">
                   <History className="w-3 h-3" /> Location History
                 </label>
                 <div className="space-y-2">
@@ -203,22 +209,22 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
                     <button
                       key={hist.id}
                       onClick={() => setCompareItem(hist)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-left group"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-left group"
                     >
                       <img
                         src={hist.imageUrl}
-                        className="w-10 h-10 rounded-md object-cover"
+                        className="w-10 h-10 rounded-md object-cover bg-gray-100 dark:bg-slate-800"
                         alt="history"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-gray-900 dark:text-gray-200 truncate">
                           {new Date(hist.createdAt || "").toLocaleDateString()}
                         </p>
-                        <p className="text-[10px] text-gray-500 truncate">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                           {hist.healthStatus || "Healthy"}
                         </p>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 text-blue-600 transition-opacity">
+                      <div className="opacity-0 group-hover:opacity-100 text-blue-600 dark:text-blue-400 transition-opacity">
                         <ArrowRightLeft className="w-4 h-4" />
                       </div>
                     </button>
@@ -227,33 +233,42 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
               </div>
             )}
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                File Name
-              </label>
-              <p className="text-sm font-medium text-gray-900 break-all leading-relaxed">
-                {plant.imageName}
-              </p>
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                  File Name
+                </label>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-300 break-all leading-relaxed mt-1">
+                  {plant.imageName}
+                </p>
+              </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-gray-50 rounded-lg">
-                <MapPin className="w-5 h-5 text-gray-600" />
+              <div className="p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                <MapPin className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="flex-1">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   Location
                 </label>
                 <div className="grid grid-cols-2 gap-4 mt-2">
-                  <div className="bg-gray-50 p-2 rounded border border-gray-100">
-                    <span className="text-[10px] text-gray-500 block">Lat</span>
-                    <p className="text-sm font-mono font-medium">
+                  <div className="bg-gray-50 dark:bg-slate-800 p-2 rounded border border-gray-100 dark:border-slate-700">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                      Lat
+                    </span>
+                    <p className="text-sm font-mono font-medium text-gray-900 dark:text-gray-200">
                       {plant.latitude.toFixed(6)}
                     </p>
                   </div>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-100">
-                    <span className="text-[10px] text-gray-500 block">Lng</span>
-                    <p className="text-sm font-mono font-medium">
+                  <div className="bg-gray-50 dark:bg-slate-800 p-2 rounded border border-gray-100 dark:border-slate-700">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                      Lng
+                    </span>
+                    <p className="text-sm font-mono font-medium text-gray-900 dark:text-gray-200">
                       {plant.longitude.toFixed(6)}
                     </p>
                   </div>
@@ -262,14 +277,14 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600" />
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <label className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   Captured On
                 </label>
-                <p className="text-sm font-medium text-gray-900 mt-1">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-200 mt-1">
                   {new Date(plant.createdAt || Date.now()).toLocaleDateString(
                     "en-IN",
                     {
@@ -286,6 +301,7 @@ export default function PlantSidebar({ plant, onClose }: PlantSidebarProps) {
           </div>
         </div>
       </div>
+
       {compareItem && (
         <CompareSlider
           beforeImage={compareItem.imageUrl}

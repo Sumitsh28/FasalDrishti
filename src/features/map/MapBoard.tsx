@@ -24,6 +24,7 @@ import { ThemeToggle } from "../../components/ThemeToggle";
 import TimeSlider from "./TimeSlider";
 import LiveToggle from "./LiveToggle";
 import PlantInventory from "./PlantInventory";
+import StatsOverlay from "./StatsOverlay";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -305,45 +306,111 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
       <div className="absolute top-[220px] left-[10px] z-[10] flex flex-col gap-2">
         <button
           onClick={handleDownloadAll}
-          className="w-[29px] h-[29px] bg-white dark:bg-slate-800 dark:text-gray-200 rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors"
-          title="Download Full Farm CSV"
+          title=""
+          className="
+    relative group
+    inline-flex items-center justify-center
+    h-9 w-9
+    rounded-md
+    bg-white text-gray-700
+    border border-gray-200
+    shadow-sm
+    hover:bg-gray-50 hover:border-gray-300
+    dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700
+    dark:hover:bg-slate-700 dark:hover:border-slate-600
+    transition-colors transition-shadow duration-200
+  "
         >
           <FileDown className="w-4 h-4" />
+
+          <span
+            className="
+      pointer-events-none
+      absolute top-1/2 left-full ml-2 -translate-y-1/2
+      whitespace-nowrap
+      rounded-md px-2 py-1
+      text-xs font-medium
+      bg-gray-900 text-white
+      opacity-0 scale-95
+      group-hover:opacity-100 group-hover:scale-100
+      transition-all duration-200
+      dark:bg-gray-100 dark:text-gray-900
+    "
+          >
+            Download Full Farm CSV
+          </span>
         </button>
 
         <ThemeToggle />
 
         <button
           onClick={() => setShowTimeline(!showTimeline)}
+          aria-label="Toggle Time Travel"
           className={`
-            w-[29px] h-[29px] rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] flex items-center justify-center transition-colors
-            ${
-              showTimeline
-                ? "bg-green-600 text-white shadow-green-200"
-                : "bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50"
-            }
-          `}
-          title="Toggle Time Travel"
+  relative group inline-flex items-center justify-center
+  h-9 w-9 rounded-md
+  border shadow-sm
+  transition-colors transition-shadow duration-200
+  ${
+    showTimeline
+      ? "bg-green-600 text-white border-green-600 shadow-green-200 hover:bg-green-700"
+      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300 dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600"
+  }
+`}
         >
           <History className="w-4 h-4" />
+
+          <span
+            className="
+      pointer-events-none
+      absolute top-1/2 left-full ml-2 -translate-y-1/2
+      whitespace-nowrap
+      rounded-md px-2 py-1
+      text-xs font-medium
+      bg-gray-900 text-white
+      opacity-0 scale-95
+      group-hover:opacity-100 group-hover:scale-100
+      transition-all duration-200
+      dark:bg-gray-100 dark:text-gray-900
+    "
+          >
+            {showTimeline ? "Disable Time Travel" : "Enable Time Travel"}
+          </span>
         </button>
 
         <LiveToggle />
 
         <button
           onClick={() => setShowInventory(!showInventory)}
+          aria-label="Farm Inventory List"
           className={`
-        w-[29px] h-[29px] rounded-md shadow-[0_0_0_2px_rgba(0,0,0,0.1)] 
-        flex items-center justify-center transition-colors
-        ${
-          showInventory
-            ? "bg-blue-600 text-white shadow-blue-200"
-            : "bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50"
-        }
-      `}
-          title="Farm Inventory List"
+    relative group inline-flex items-center justify-center
+    h-9 w-9 rounded-md
+    border shadow-sm
+    transition-colors duration-200
+    ${
+      showInventory
+        ? "bg-blue-600 text-white border-blue-600 shadow-blue-200 hover:bg-blue-700"
+        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:border-slate-600"
+    }
+  `}
         >
           <ListIcon className="w-4 h-4" />
+
+          <span
+            className="
+      pointer-events-none absolute top-1/2 left-full ml-2 -translate-y-1/2
+      whitespace-nowrap rounded-md px-2 py-1
+      text-xs font-medium
+      bg-gray-900 text-white
+      opacity-0 scale-95
+      group-hover:opacity-100 group-hover:scale-100
+      transition-all duration-200
+      dark:bg-gray-100 dark:text-gray-900
+    "
+          >
+            Farm Inventory List
+          </span>
         </button>
       </div>
 
