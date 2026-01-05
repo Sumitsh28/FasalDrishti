@@ -36,30 +36,15 @@ _Comparing crop health before and after treatment using the historical slider._
 
 ## 🏗️ Architectural Decisions & Engineering Impact
 
-We didn't just build features; we solved engineering constraints. Here is the breakdown of our technical strategy:
+We didn’t just build features; we solved engineering constraints. Below is the breakdown of our technical strategy:
 
-| Challenge | Architectural Decision | Implementation Detail | Quantifiable Impact |
-| --------- | ---------------------- | --------------------- | ------------------- |
-
-| **Network Instability** <br>
-
-<br> _(Farms have poor 4G)_ | **Offline-First Queue (IndexedDB)** | Custom Redux Middleware intercepts failed 500/Network errors and serializes the action to IndexedDB. A background listener flushes the queue when `navigator.onLine` becomes true. | **0% Data Loss.**<br>
-
-<br>Users can map an entire field in "Airplane Mode" and sync later. |
-| **Rendering Bottlenecks** <br>
-
-<br> _(Map lag with 1k+ markers)_ | **Supercluster Aggregation** | Instead of rendering 1,000 DOM nodes, we use a K-D Tree (Supercluster) to aggregate points based on zoom level and viewport bounds. | **60 FPS Rendering.**<br>
-
-<br>Reduced DOM node count by **~95%** at zoom level 4. |
-| **List Performance** <br>
-
-<br> _(Sidebar lagging)_ | **Windowing / Virtualization** | Used `react-window` to only render the ~10 list items currently visible in the viewport, recycling DOM nodes on scroll. | **Constant O(1) Memory Usage** regardless of list size (10 vs 10,000 items). |
-| **User Perceived Latency** | **Optimistic Updates** | The Redux store updates _immediately_ upon user action. We roll back state only if the server explicitly rejects the final sync. | **< 50ms Interaction Time.**<br>
-
-<br>Upload feels instant despite 2-3s server latency. |
-| **Large Image Uploads** | **Client-Side Compression** | `browser-image-compression` runs in a non-blocking thread to resize 4K phone photos to optimized web-ready assets before they hit the network. | **80% Bandwidth Savings.**<br>
-
-<br>Reduced average payload from 5MB to ~800KB. |
+| Challenge                                              | Architectural Decision              | Implementation Detail                                                                                                                                                             | Quantifiable Impact                                                              |
+| ------------------------------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Network Instability** _(Farms have poor 4G)_         | **Offline-First Queue (IndexedDB)** | Custom Redux middleware intercepts failed `500`/network errors and serializes actions to IndexedDB. A background listener flushes the queue when `navigator.onLine` becomes true. | **0% data loss.** Users can map an entire field in airplane mode and sync later. |
+| **Rendering Bottlenecks** _(Map lag with 1k+ markers)_ | **Supercluster Aggregation**        | Uses a K-D tree (Supercluster) to aggregate points based on zoom level and viewport bounds instead of rendering individual DOM nodes.                                             | **60 FPS rendering.** Reduced DOM nodes by **~95%** at zoom level 4.             |
+| **List Performance** _(Sidebar lagging)_               | **Windowing / Virtualization**      | Implemented `react-window` to render only the visible ~10 list items and recycle DOM nodes during scroll.                                                                         | **O(1) memory usage** regardless of list size (10 vs 10,000 items).              |
+| **User-Perceived Latency**                             | **Optimistic Updates**              | Redux store updates immediately on user action; state is rolled back only if the server rejects the final sync.                                                                   | **< 50 ms interaction time.** Uploads feel instant despite 2–3 s server latency. |
+| **Large Image Uploads**                                | **Client-Side Compression**         | `browser-image-compression` runs off the main thread to resize 4K images into optimized web assets before upload.                                                                 | **~80% bandwidth savings.** Reduced payload from ~5 MB to ~800 KB.               |
 
 ---
 
