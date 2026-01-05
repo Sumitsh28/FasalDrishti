@@ -266,16 +266,23 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
               latitude={latitude}
               longitude={longitude}
               anchor="bottom"
-              onClick={(e) => {
-                e.originalEvent.stopPropagation();
-                onPlantSelect(plant);
-              }}
+              style={{ zIndex: 10 }}
             >
-              <div
+              <button
+                type="button"
                 className={`
                 relative p-2 rounded-full border-2 shadow-lg transition-all cursor-pointer hover:scale-110
                 ${markerColor} border-white
                 `}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPlantSelect(plant);
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onPlantSelect(plant);
+                }}
               >
                 <Sprout
                   className={`w-5 h-5 ${
@@ -287,7 +294,7 @@ export default function MapBoard({ onPlantSelect }: MapBoardProps) {
                     <Clock className="w-2 h-2 text-yellow-900" />
                   </div>
                 )}
-              </div>
+              </button>
             </Marker>
           );
         })}
